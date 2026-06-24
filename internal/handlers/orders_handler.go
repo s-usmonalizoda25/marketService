@@ -50,8 +50,9 @@ func (h *OrderHandler) GetOrderById(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid order ID format", http.StatusBadRequest)
 		return
 	}
+	userID := r.Context().Value("userID").(uint)
 
-	order, err := h.service.GetOrderById(r.Context(), uint(id))
+	order, err := h.service.GetOrderById(r.Context(), userID, uint(id))
 	if err != nil {
 		HandleError(w, h.log, err)
 		return
@@ -128,7 +129,6 @@ func (h *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "order deleted successfully"}`))
 }
-
 
 func (h *OrderHandler) AdminGetAllOrders(w http.ResponseWriter, r *http.Request) {
 	orders, err := h.service.GetAllOrders(r.Context())
