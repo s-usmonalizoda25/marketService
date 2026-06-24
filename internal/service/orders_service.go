@@ -10,7 +10,7 @@ import (
 
 type OrderService interface {
 	CreateOrder(ctx context.Context, userID uint, req *models.CreateOrderRequest) (uint, error)
-	GetOrderById(ctx context.Context, id uint) (*models.Order, error)
+	GetOrderById(ctx context.Context, id uint, userID uint, orderID uint) (*models.Order, error)
 	GetOrdersByUserID(ctx context.Context, userID uint) ([]models.Order, error)
 	UpdateOrderStatus(ctx context.Context, id uint, status models.OrderStatus) error
 
@@ -38,8 +38,8 @@ func (s *MyOrderService) CreateOrder(ctx context.Context, userID uint, req *mode
 	return s.repo.CreateOrder(ctx, userID, req)
 }
 
-func (s *MyOrderService) GetOrderById(ctx context.Context, id uint, userID uint, orderId uint) (*models.Order, error) {
-	order, err:= s.repo.GetOrderById(ctx, orderId)
+func (s *MyOrderService) GetOrderById(ctx context.Context, id uint, userID uint, orderID uint) (*models.Order, error) {
+	order, err:= s.repo.GetOrderById(ctx, orderID)
 	if err!=nil{
 		return nil, err
 	}
