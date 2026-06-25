@@ -1,4 +1,15 @@
-Тест проекта 
+Тест проекта
+
+
+
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODIzOTM5OTAsImlhdCI6MTc4MjM5MzA5MCwidXNlcl9pZCI6NCwicm9sZSI6InVzZXIifQ.3UCZg1rSUIVzacyrr_Ga8i21hQqSTOtbIXZW431xMg8
+
+
+
+
+
+
 http://localhost:8080/auth/register:
 
 1. 
@@ -75,4 +86,23 @@ http://localhost:8080/auth/refresh:
     "refresh_token": "e79842149acd94bf79e9098e80db3a4fc1d68401851ddf06e93fe8af0bc70185",
     "expires_at": "2026-06-25T16:49:21.954294451+05:00"
 }  200 ok
+
+
+http://localhost:8080/users/me  GET:
+
+1. 
+без access token ---> invalid authorization header format  , 401 unauth
+
+c неправильным acc token ---> invalid or expired token , 401 unauth
+
+c access token ---> Показывает мой профиль
+
+
+
+http://localhost:8080/users/me PUT: 
+
+
+
+
+ без access token ---> 
 
