@@ -3,7 +3,11 @@
 
 
 
+1.
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODIzOTM5OTAsImlhdCI6MTc4MjM5MzA5MCwidXNlcl9pZCI6NCwicm9sZSI6InVzZXIifQ.3UCZg1rSUIVzacyrr_Ga8i21hQqSTOtbIXZW431xMg8
+
+2.
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODIzOTUxNTcsImlhdCI6MTc4MjM5NDI1NywidXNlcl9pZCI6NCwicm9sZSI6InVzZXIifQ.A92hkiKm3_kcu_8vvaBQVz2Aw-Z9d-vCaWpVzqSXi5o
 
 
 
@@ -101,8 +105,18 @@ c access token ---> Показывает мой профиль
 
 http://localhost:8080/users/me PUT: 
 
+1. 
+{
+    "name":"Suhrob",
+    "email":"suhrobusmonalizoda0625@gmail.com",
+    "password":"admin12345",
+    "phone":"992071055225"
+}  
+c токеном --> {
+    "message": "profile updated successfully"
+}  200 , OK
 
+ без access token ---> invalid authorization header format , 401 unauth
+ c неправильным токен ---> invalid or expired token, 401 unauth
 
-
- без access token ---> 
 
