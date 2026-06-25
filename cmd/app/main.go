@@ -53,6 +53,12 @@ func main() {
 	}
 	mainLog.Info("Successfully connected to PostgreSQL pool!")
 
+	err = repository.RunMigration(ctx, pool)
+	if err != nil {
+		mainLog.Fatal("Failed to run table migration", zap.Error(err))
+	}
+	mainLog.Info("Migrations applied successfully!")
+
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
 		mainLog.Fatal("JWT_SECRET environment variable is required but not set")

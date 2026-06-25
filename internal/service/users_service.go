@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/s-usmonalizoda25/marketService/internal/infrastructure/security"
 	"github.com/s-usmonalizoda25/marketService/internal/models"
 	"github.com/s-usmonalizoda25/marketService/internal/repository"
@@ -43,6 +45,10 @@ func (s *MyUserService) Register(ctx context.Context, req *models.RegisterReques
 
 	id, err := s.repo.CreateUser(ctx, req, passwordHash)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return 0, errs.ErrEmailAlreadyExists
+		}
 		return 0, err
 	}
 
