@@ -16,19 +16,19 @@ type Claims struct {
 }
 
 type JWTManager struct {
-	secretKey     []byte
-	accesDuration time.Duration
+	secretKey      []byte
+	accessDuration time.Duration
 }
 
-func NewJWTManager(secretKey string, accesDuration time.Duration) *JWTManager {
+func NewJWTManager(secretKey string, accessDuration time.Duration) *JWTManager {
 	return &JWTManager{
-		secretKey:     []byte(secretKey),
-		accesDuration: accesDuration,
+		secretKey:      []byte(secretKey),
+		accessDuration: accessDuration,
 	}
 }
 
-func (m *JWTManager) GenetareAccesToken(userID uint, role string) (string, time.Time, error) {
-	expiresAt := time.Now().Add(m.accesDuration)
+func (m *JWTManager) GenerateAccessToken(userID uint, role string) (string, time.Time, error) {
+	expiresAt := time.Now().Add(m.accessDuration)
 
 	claims := Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -39,7 +39,7 @@ func (m *JWTManager) GenetareAccesToken(userID uint, role string) (string, time.
 		Role:   role,
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(m.secretKey)
 	if err != nil {
 		return "", time.Time{}, err
@@ -48,7 +48,7 @@ func (m *JWTManager) GenetareAccesToken(userID uint, role string) (string, time.
 	return tokenString, expiresAt, nil
 }
 
-func (m *JWTManager) VerifyAccesToken(tokenString string) (*Claims, error) {
+func (m *JWTManager) VerifyAccessToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")

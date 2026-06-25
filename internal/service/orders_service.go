@@ -12,9 +12,9 @@ type OrderService interface {
 	CreateOrder(ctx context.Context, userID uint, req *models.CreateOrderRequest) (uint, error)
 	GetOrderById(ctx context.Context, userID uint, orderID uint) (*models.Order, error)
 	GetOrdersByUserID(ctx context.Context, userID uint) ([]models.Order, error)
-	UpdateOrderStatus(ctx context.Context, id uint, status models.OrderStatus) error
+	UpdateOrderStatus(ctx context.Context, userID uint, id uint, status models.OrderStatus) error
 
-	DeleteOrder(ctx context.Context, id uint) error
+	DeleteOrder(ctx context.Context, userId uint, id uint) error
 	GetAllOrders(ctx context.Context) ([]models.Order, error)
 }
 
@@ -51,33 +51,42 @@ func (s *MyOrderService) GetOrderById(ctx context.Context, userID uint, orderID 
 	return order, nil
 }
 
-func (s *MyOrderService) GetOrdersByUserID(ctx context.Context, userID uint) ([]models.Order, error) {
-	return s.repo.GetOrdersByUserID(ctx, userID)
-}
-
-func (s *MyOrderService) UpdateOrderStatus(ctx context.Context, id uint, status models.OrderStatus) error {
-	currentOrder, err := s.repo.GetOrderById(ctx, id)
+func (s *MyOrderService) CheckOrderOwnership(ctx context.Context, userID uint, orderID uint) error {
+	order, err := s.repo.GetOrderById(ctx, orderID)
 	if err != nil {
 		return err
 	}
 
-	if currentOrder.Status == models.StatusDone && status == models.StatusCanceled {
-		return errs.ErrCannotCancelOrder
+	if order.UserID != userID {
+		return errs.ErrAccessDenied
+	}
+
+	return nil
+}
+
+func (s *MyOrderService) GetOrdersByUserID(ctx context.Context, userID uint) ([]models.Order, error) {
+	return s.repo.GetOrdersByUserID(ctx, userID)
+}
+
+func (s *MyOrderService) UpdateOrderStatus(ctx context.Context, userID uint, id uint, status models.OrderStatus) error {
+	switch status {
+	case models.StatusNew, models.StatusInProgress, models.StatusDone, models.StatusCanceled:
+
+	default:
+		return errs.ErrInvalidStatus
+	}
+
+	if err := s.CheckOrderOwnership(ctx, userID, id); err != nil {
+		return err
 	}
 
 	return s.repo.UpdateOrderStatus(ctx, id, status)
 }
 
-func (s *MyOrderService) DeleteOrder(ctx context.Context, id uint) error {
-	currentOrder, err := s.repo.GetOrderById(ctx, id)
-	if err != nil {
+func (s *MyOrderService) DeleteOrder(ctx context.Context, userID uint, id uint) error {
+	if err := s.CheckOrderOwnership(ctx, userID, id); err != nil {
 		return err
 	}
-
-	if currentOrder.Status == models.StatusInProgress || currentOrder.Status == models.StatusDone {
-		return errs.ErrCannotCancelOrder
-	}
-
 	return s.repo.DeleteOrder(ctx, id)
 }
 

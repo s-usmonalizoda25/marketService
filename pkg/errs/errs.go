@@ -16,4 +16,8 @@ var (
 	ErrInvalidOrderPrice  = errors.New("order price must be greater than zero")
 	ErrEmptyProductStatus = errors.New("product name cannot be empty")
 	ErrCannotCancelOrder  = errors.New("cannot cancel an order that is already completed")
+
+	ErrEmptyName   = errors.New("name cannot be empty")
+	ErrInvalidRole = errors.New("invalid role provided")
+	ErrInvalidStatus = errors.New("invalid order status")
 )

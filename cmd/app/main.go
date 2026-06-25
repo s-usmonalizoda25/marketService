@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -75,7 +77,9 @@ func main() {
 		mainLog.Fatal("SERVER_PORT environment variable is required but not set")
 	}
 
-	mainLog.Info("Starting HTTP server...", zap.String("port", serverPort))
+	notifyCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	server := &http.Server{
 		Addr:         ":" + serverPort,
 		Handler:      appRouter,
@@ -83,7 +87,22 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		mainLog.Fatal("HTTP server failed to start", zap.Error(err))
+	go func() {
+		mainLog.Info("Starting HTTP server...", zap.String("port", serverPort))
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			mainLog.Fatal("HTTP server failed to start", zap.Error(err))
+		}
+	}()
+
+	<-notifyCtx.Done()
+	mainLog.Info("Shutting down server...")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		mainLog.Fatal("Server forced to shutdown:", zap.Error(err))
 	}
+
+	mainLog.Info("Server exiting")
 }

@@ -73,7 +73,7 @@ func (r *PostgresOrderRepo) GetOrdersByUserID(ctx context.Context, userID uint) 
 	}
 	defer rows.Close()
 
-	var orders []models.Order
+	orders := make([]models.Order, 0)
 	for rows.Next() {
 		var order models.Order
 		err := rows.Scan(
@@ -127,7 +127,7 @@ func (r *PostgresOrderRepo) GetAllOrders(ctx context.Context) ([]models.Order, e
 	}
 	defer rows.Close()
 
-	var orders []models.Order
+	orders := make([]models.Order, 0)
 	for rows.Next() {
 		var o models.Order
 		if err := rows.Scan(&o.ID, &o.UserID, &o.Product, &o.Price, &o.Status, &o.CreatedAt); err != nil {

@@ -50,7 +50,11 @@ func (h *OrderHandler) GetOrderById(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid order ID format", http.StatusBadRequest)
 		return
 	}
-	userID := r.Context().Value("userID").(uint)
+	userID, ok := r.Context().Value(UserIDKey).(uint)
+	if !ok {
+		http.Error(w, "unauthorized: user id not found in context", http.StatusUnauthorized)
+		return
+	}
 
 	order, err := h.service.GetOrderById(r.Context(), userID, uint(id))
 	if err != nil {
@@ -89,6 +93,12 @@ func (h *OrderHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, ok := r.Context().Value(UserIDKey).(uint)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	var req models.UpdateOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -100,7 +110,7 @@ func (h *OrderHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.UpdateOrderStatus(r.Context(), uint(id), req.Status)
+	err = h.service.UpdateOrderStatus(r.Context(), userID, uint(id), req.Status)
 	if err != nil {
 		HandleError(w, h.log, err)
 		return
@@ -118,8 +128,13 @@ func (h *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid order ID format", http.StatusBadRequest)
 		return
 	}
+	userID, ok := r.Context().Value(UserIDKey).(uint)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-	err = h.service.DeleteOrder(r.Context(), uint(id))
+	err = h.service.DeleteOrder(r.Context(), userID, uint(id))
 	if err != nil {
 		HandleError(w, h.log, err)
 		return

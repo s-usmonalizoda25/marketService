@@ -60,7 +60,7 @@ func (s *MyUserService) Login(ctx context.Context, req *models.LoginRequest) (*m
 		return nil, errs.ErrInvalidCredentials
 	}
 
-	accessToken, expiresAt, err := s.jwtManager.GenetareAccesToken(user.ID, string(user.Role))
+	accessToken, expiresAt, err := s.jwtManager.GenerateAccessToken(user.ID, string(user.Role))
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (s *MyUserService) Refresh(ctx context.Context, refreshToken string) (*mode
 		return nil, err
 	}
 
-	newAccessToken, expiresAt, err := s.jwtManager.GenetareAccesToken(user.ID, string(user.Role))
+	newAccessToken, expiresAt, err := s.jwtManager.GenerateAccessToken(user.ID, string(user.Role))
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (s *MyUserService) GetProfile(ctx context.Context, id uint) (*models.User, 
 
 func (s *MyUserService) UpdateProfile(ctx context.Context, id uint, req *models.UpdateProfileRequest) error {
 	if req.Name == "" {
-		return errs.ErrEmptyProductStatus
+		return errs.ErrEmptyName
 	}
 	return s.repo.UpdateUser(ctx, id, req.Name, req.Phone)
 }
@@ -155,7 +155,7 @@ func (s *MyUserService) ChangeRole(ctx context.Context, id uint, role string) er
 	case "user":
 		userRole = models.RoleUser
 	default:
-		return errs.ErrTokenInvalid
+		return errs.ErrInvalidRole
 	}
 	return s.repo.UpdateUserRole(ctx, id, userRole)
 }
