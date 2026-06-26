@@ -29,6 +29,10 @@ func HandleError(w http.ResponseWriter, log *logger.Logger, err error) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(`{"error": "order not found"}`))
 
+	case errors.Is(err, errs.ErrAccessDenied):
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte(`{"error": "access denied"}`))
+
 	case errors.Is(err, errs.ErrEmailAlreadyExists):
 		w.WriteHeader(http.StatusConflict)
 		w.Write([]byte(`{"error": "email already exists"}`))

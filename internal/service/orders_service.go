@@ -12,7 +12,7 @@ type OrderService interface {
 	CreateOrder(ctx context.Context, userID uint, req *models.CreateOrderRequest) (uint, error)
 	GetOrderById(ctx context.Context, userID uint, orderID uint) (*models.Order, error)
 	GetOrdersByUserID(ctx context.Context, userID uint) ([]models.Order, error)
-	UpdateOrderStatus(ctx context.Context, userID uint, id uint, status models.OrderStatus) error
+	UpdateOrderStatus(ctx context.Context, userID uint, userRole string, id uint, status models.OrderStatus) error
 
 	DeleteOrder(ctx context.Context, userId uint, id uint) error
 	GetAllOrders(ctx context.Context) ([]models.Order, error)
@@ -68,16 +68,28 @@ func (s *MyOrderService) GetOrdersByUserID(ctx context.Context, userID uint) ([]
 	return s.repo.GetOrdersByUserID(ctx, userID)
 }
 
-func (s *MyOrderService) UpdateOrderStatus(ctx context.Context, userID uint, id uint, status models.OrderStatus) error {
-	switch status {
-	case models.StatusNew, models.StatusInProgress, models.StatusDone, models.StatusCanceled:
-
-	default:
-		return errs.ErrInvalidStatus
+func (s *MyOrderService) UpdateOrderStatus(ctx context.Context, userID uint, userRole string, id uint, status models.OrderStatus) error {
+	order, err := s.repo.GetOrderById(ctx, id)
+	if err != nil {
+		return err
 	}
 
-	if err := s.CheckOrderOwnership(ctx, userID, id); err != nil {
-		return err
+	if order.UserID != userID {
+		return errs.ErrAccessDenied
+	}
+	if userRole != "admin" {
+		if status != models.StatusCanceled {
+			return errs.ErrAccessDenied
+		}
+
+		if order.Status != models.StatusNew {
+			return errs.ErrCannotCancelOrder
+		}
+	}
+	switch status {
+	case models.StatusNew, models.StatusInProgress, models.StatusDone, models.StatusCanceled:
+	default:
+		return errs.ErrInvalidStatus
 	}
 
 	return s.repo.UpdateOrderStatus(ctx, id, status)

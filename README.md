@@ -9,6 +9,11 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODIzOTM5OTAsImlhdCI6MTc4MjM5MzA
 2.
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODIzOTUxNTcsImlhdCI6MTc4MjM5NDI1NywidXNlcl9pZCI6NCwicm9sZSI6InVzZXIifQ.A92hkiKm3_kcu_8vvaBQVz2Aw-Z9d-vCaWpVzqSXi5o
 
+3.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODI0NzAxMjUsImlhdCI6MTc4MjQ2OTIyNSwidXNlcl9pZCI6NCwicm9sZSI6InVzZXIifQ.VP79zaqv8ChX1WuiIcZ97d_qGYSgaqxccTUXlTN4fYI
+
+4.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODI0NzA4OTIsImlhdCI6MTc4MjQ2OTk5MiwidXNlcl9pZCI6Niwicm9sZSI6InVzZXIifQ.xamLcCraCetsvmK0szkDAJ30z9tqaYHlj0wrabTCCis
+
+5.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODI0NzExNjQsImlhdCI6MTc4MjQ3MDI2NCwidXNlcl9pZCI6Niwicm9sZSI6InVzZXIifQ.wmUmGa9lnZtBdUC5KYFZTZcwl2xqDRq2kqmH0vAsH-4
 
 
 
@@ -119,4 +124,80 @@ c токеном --> {
  без access token ---> invalid authorization header format , 401 unauth
  c неправильным токен ---> invalid or expired token, 401 unauth
 
+http://localhost:8080/users/me DELETE: 
+1. 
+c токеном --> {
+    "message": "account deleted successfully"
+}  
+
+с неправильным токеном --> invalid or expired token 401 unauth
+
+http://localhost:8080/orders POST
+1. 
+{
+    "product":"IPhone 15",
+    "price":3000
+} ---> {
+    "order_id": 2
+} ---> 201 Created
+
+2. 
+{
+    "product":"Mac",
+    "price":-9000
+} ---> {
+    "error": "order price must be greater than zero"
+} ---> 400 bad req
+
+3. 
+без токена ---> authorization header is required
+
+с неправильным токеном ---> invalid or expired token
+
+http://localhost:8080/orders GET 
+
+1. 
+без токена ---> authorization header is required
+c неправильнвм токеном ---> invalid or expired token
+
+c праивильным токеном ----> [
+    {
+        "id": 2,
+        "product": "IPhone 15",
+        "price": 3000,
+        "user_id": 4,
+        "status": "new",
+        "created_at": "2026-06-26T15:21:44.416909+05:00"
+    },
+    {
+        "id": 1,
+        "product": "Go Courses",
+        "price": 150.5,
+        "user_id": 4,
+        "status": "new",
+        "created_at": "2026-06-25T20:00:01.560241+05:00"
+    }
+]
+
+200, ok
+
+2. 
+Заходим из другого пользователя у которого нет закозов
+вывод ---> []
+
+200 , ok
+
+
+
+
+
+http://localhost:8080/orders/1 GET
+
+1. 
+Вставляем свой токен но выбираем айди чужого заказа 
+---->   {
+    "error": "access denied"
+} ---> 403 Forbidden
+
+2. 
 

@@ -33,3 +33,4 @@ func NewRouter(jwtManager *security.JWTManager, userHandler *handlers.UserHandle
 
 	return mux
 }
+
