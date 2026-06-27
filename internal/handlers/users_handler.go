@@ -21,7 +21,7 @@ func NewUserHandler(s service.UserService, log *logger.Logger) *UserHandler {
 }
 
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var req models.RegisterRequest
+	var req models.RegisterReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
@@ -40,7 +40,25 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.service.Register(r.Context(), &req)
+	err := h.service.RegisterRequest(req)
+	if err != nil {
+		HandleError(w, h.log, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	w.Write([]byte(`{"message": "OTP code sent to email"}`))
+}
+
+func (h *UserHandler) Verify(w http.ResponseWriter, r *http.Request) {
+	var req models.VerifyReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	id, err := h.service.VerifyEmail(r.Context(), req)
 	if err != nil {
 		HandleError(w, h.log, err)
 		return

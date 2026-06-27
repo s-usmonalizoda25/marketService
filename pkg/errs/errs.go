@@ -20,4 +20,6 @@ var (
 	ErrEmptyName   = errors.New("name cannot be empty")
 	ErrInvalidRole = errors.New("invalid role provided")
 	ErrInvalidStatus = errors.New("invalid order status")
+
+	ErrInvalidOtp = errors.New("invalid Otp code")
 )

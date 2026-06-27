@@ -16,6 +16,7 @@ import (
 	"github.com/s-usmonalizoda25/marketService/internal/infrastructure/security"
 	"github.com/s-usmonalizoda25/marketService/internal/repository"
 	"github.com/s-usmonalizoda25/marketService/internal/service"
+	"github.com/s-usmonalizoda25/marketService/pkg/cache"
 	"github.com/s-usmonalizoda25/marketService/pkg/logger"
 	"github.com/s-usmonalizoda25/marketService/router"
 	"go.uber.org/zap"
@@ -70,7 +71,9 @@ func main() {
 	userRepo := repository.NewPostgresUserRepo(pool)
 	orderRepo := repository.NewPostgresOrderRepo(pool)
 
-	userService := service.NewMyUserService(userRepo, hasher, jwtManager)
+	userCache := cache.NewMemoryCache()
+
+	userService := service.NewMyUserService(userRepo, hasher, jwtManager, userCache)
 	orderService := service.NewMyOrderService(orderRepo)
 
 	userHandler := handlers.NewUserHandler(userService, mainLog)

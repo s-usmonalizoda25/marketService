@@ -9,6 +9,7 @@ import (
 	"github.com/s-usmonalizoda25/marketService/internal/infrastructure/security"
 	"github.com/s-usmonalizoda25/marketService/internal/models"
 	"github.com/s-usmonalizoda25/marketService/internal/repository"
+	"github.com/s-usmonalizoda25/marketService/pkg/cache"
 	"github.com/s-usmonalizoda25/marketService/pkg/errs"
 )
 
@@ -21,20 +22,72 @@ type UserService interface {
 	DeleteMe(ctx context.Context, id uint) error
 	GetAllUsers(ctx context.Context) ([]models.User, error)
 	ChangeRole(ctx context.Context, id uint, role string) error
+	RegisterRequest(req models.RegisterReq) error
+	VerifyEmail(ctx context.Context, req models.VerifyReq) (uint, error)
 }
 
 type MyUserService struct {
 	repo       repository.UserRepo
 	hasher     *security.BcryptHasher
 	jwtManager *security.JWTManager
+	cache      cache.MemoryCache
 }
 
-func NewMyUserService(repo repository.UserRepo, hasher *security.BcryptHasher, jwtManager *security.JWTManager) *MyUserService {
+func NewMyUserService(repo repository.UserRepo, hasher *security.BcryptHasher, jwtManager *security.JWTManager, cache cache.MemoryCache) *MyUserService {
 	return &MyUserService{
 		repo:       repo,
 		hasher:     hasher,
 		jwtManager: jwtManager,
+		cache:      cache,
 	}
+}
+
+func (s *MyUserService) RegisterRequest(req models.RegisterReq) error {
+
+	otp := "252525"
+	hashedPassword, err := s.hasher.Hash(req.Password)
+	if err != nil {
+		return err
+	}
+
+	waitingUser := models.WaitingUser{
+		User: models.User{
+			Name:        req.Name,
+			Email:       req.Email,
+			Phone:       req.Phone,
+			PassworHash: hashedPassword,
+		},
+		Otp:       otp,
+		CreatedAt: time.Now(),
+	}
+
+	s.cache.Set(req.Email, waitingUser, 5*time.Minute)
+
+	return nil
+}
+
+func (s *MyUserService) VerifyEmail(ctx context.Context, req models.VerifyReq) (uint, error) {
+	val, found := s.cache.Get(req.Email)
+	if !found {
+		return 0, errs.ErrInvalidOtp
+	}
+	inwaiting := val.(models.WaitingUser)
+	if inwaiting.Otp != req.Code {
+		return 0, errs.ErrInvalidOtp
+	}
+
+	id, err := s.repo.CreateUser(ctx, &models.RegisterRequest{
+		Name:     inwaiting.User.Name,
+		Email:    inwaiting.User.Email,
+		Phone:    inwaiting.User.Phone,
+		Password: "",
+	}, inwaiting.User.PassworHash)
+
+	if err != nil {
+		return 0, err
+	}
+	s.cache.Remove(req.Email)
+	return id, nil
 }
 
 func (s *MyUserService) Register(ctx context.Context, req *models.RegisterRequest) (uint, error) {

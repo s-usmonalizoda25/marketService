@@ -10,6 +10,7 @@ import (
 func NewRouter(jwtManager *security.JWTManager, userHandler *handlers.UserHandler, orderHandler *handlers.OrderHandler) *http.ServeMux {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("POST /auth/verify", userHandler.Verify)
 	mux.HandleFunc("POST /auth/register", userHandler.Register)
 	mux.HandleFunc("POST /auth/login", userHandler.Login)
 	mux.HandleFunc("POST /auth/refresh", userHandler.Refresh)
@@ -33,4 +34,3 @@ func NewRouter(jwtManager *security.JWTManager, userHandler *handlers.UserHandle
 
 	return mux
 }
-
