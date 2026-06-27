@@ -24,6 +24,7 @@ type UserService interface {
 	ChangeRole(ctx context.Context, id uint, role string) error
 	RegisterRequest(req models.RegisterReq) error
 	VerifyEmail(ctx context.Context, req models.VerifyReq) (uint, error)
+	ChangePassword(ctx context.Context, id uint, oldPass, newPass string) error
 }
 
 type MyUserService struct {
@@ -217,4 +218,21 @@ func (s *MyUserService) ChangeRole(ctx context.Context, id uint, role string) er
 		return errs.ErrInvalidRole
 	}
 	return s.repo.UpdateUserRole(ctx, id, userRole)
+}
+
+func (s *MyUserService) ChangePassword(ctx context.Context, id uint, oldPass, newPass string) error {
+	user, err := s.repo.GetUserById(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = s.hasher.Compare(user.PassworHash, oldPass)
+	if err != nil {
+		return errs.WrongOldPassword
+	}
+
+	newHash, err := s.hasher.Hash(newPass)
+	if err != nil {
+		return err
+	}
+	return s.repo.UpdatePassword(ctx, id, newHash)
 }

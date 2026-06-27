@@ -86,41 +86,40 @@ func (h *OrderHandler) GetMyOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
-    idStr := r.PathValue("id")
-    id, err := strconv.ParseUint(idStr, 10, 64)
-    if err != nil {
-        http.Error(w, "invalid order ID format", http.StatusBadRequest)
-        return
-    }
-    userID, okID := r.Context().Value(UserIDKey).(uint)
-    userRole, okRole := r.Context().Value(UserRoleKey).(string)
-    
-    if !okID || !okRole {
-        http.Error(w, "unauthorized", http.StatusUnauthorized)
-        return
-    }
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid order ID format", http.StatusBadRequest)
+		return
+	}
+	userID, okID := r.Context().Value(UserIDKey).(uint)
+	userRole, okRole := r.Context().Value(UserRoleKey).(string)
 
+	if !okID || !okRole {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-    var req models.UpdateOrderRequest
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        http.Error(w, "invalid request body", http.StatusBadRequest)
-        return
-    }
+	var req models.UpdateOrderRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
 
-    if req.Status == "" {
-        http.Error(w, "status parameter is required", http.StatusBadRequest)
-        return
-    }
+	if req.Status == "" {
+		http.Error(w, "status parameter is required", http.StatusBadRequest)
+		return
+	}
 
-    err = h.service.UpdateOrderStatus(r.Context(), userID, userRole, uint(id), req.Status)
-    if err != nil {
-        HandleError(w, h.log, err)
-        return
-    }
-	
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte(`{"message": "order status updated successfully"}`))
+	err = h.service.UpdateOrderStatus(r.Context(), userID, userRole, uint(id), req.Status)
+	if err != nil {
+		HandleError(w, h.log, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "order status updated successfully"}`))
 }
 
 func (h *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {

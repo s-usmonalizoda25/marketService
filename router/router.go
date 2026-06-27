@@ -20,6 +20,8 @@ func NewRouter(jwtManager *security.JWTManager, userHandler *handlers.UserHandle
 	mux.HandleFunc("PUT /users/me", handlers.AuthMiddleware(jwtManager, userHandler.UpdateProfile))
 	mux.HandleFunc("DELETE /users/me", handlers.AuthMiddleware(jwtManager, userHandler.DeleteMe))
 
+	mux.HandleFunc("PUT /users/change-password", handlers.AuthMiddleware(jwtManager, userHandler.ChangePassword))
+
 	//заказы польщователя
 	mux.HandleFunc("POST /orders", handlers.AuthMiddleware(jwtManager, orderHandler.CreateOrder))
 	mux.HandleFunc("GET /orders", handlers.AuthMiddleware(jwtManager, orderHandler.GetMyOrders))

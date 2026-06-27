@@ -201,3 +201,43 @@ http://localhost:8080/orders/1 GET
 
 2. 
 
+
+http://localhost:8080/users/change-password :
+
+1. 
+{
+    "old_password":"admin12345",
+    "new_password":"admin25"
+} ---> {
+    "message": "password changed successfully"
+} ---> 200, ok
+
+2. 
+{
+    "old_password":"admin9999999999",
+    "new_password":"admin25"
+} ---> {
+    "error": "old password is incorrect"
+}  ----> 401 unauth
+
+http://localhost:8080/admin/users:
+
+1. 
+Если вставить токен простого юзера ----> forbidden: admin access required 403
+
+2. 
+с токеном админа ---> показывает юзеров 200, ok
+
+3. 
+инвалидный токен или без токена ---> invalid or expired token
+
+http://localhost:8080/admin/orders:
+
+1. 
+с токеном админа ---> показывает все заказы 200, ok
+
+2. 
+Если вставить токен простого юзера ----> forbidden: admin access required 403
+
+3. 
+инвалидный токен или без токена ---> invalid or expired token  401 unauth

@@ -22,6 +22,7 @@ type UserRepo interface {
 	SoftDeleteUser(ctx context.Context, id uint) error
 	GetAllUsers(ctx context.Context) ([]models.User, error)
 	UpdateUserRole(ctx context.Context, id uint, role models.UserRole) error
+	UpdatePassword(ctx context.Context, id uint, passwordHash string) error
 }
 
 type PostgresUserRepo struct {
@@ -169,6 +170,18 @@ func (r *PostgresUserRepo) GetAllUsers(ctx context.Context) ([]models.User, erro
 func (r *PostgresUserRepo) UpdateUserRole(ctx context.Context, id uint, role models.UserRole) error {
 	const query = `UPDATE users SET role = $1 WHERE id = $2 AND deleted_at IS NULL;`
 	res, err := r.pool.Exec(ctx, query, role, id)
+	if err != nil {
+		return err
+	}
+	if res.RowsAffected() == 0 {
+		return errs.ErrUserNotFound
+	}
+	return nil
+}
+
+func (r *PostgresUserRepo) UpdatePassword(ctx context.Context, id uint, passwordHash string) error {
+	const query = `UPDATE users SET password_hash = $1 WHERE id = $2 AND deleted_at IS NULL;`
+	res, err := r.pool.Exec(ctx, query, passwordHash, id)
 	if err != nil {
 		return err
 	}

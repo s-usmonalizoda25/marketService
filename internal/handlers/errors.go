@@ -17,6 +17,10 @@ func HandleError(w http.ResponseWriter, log *logger.Logger, err error) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{"error": "invalid email or password"}`))
 
+	case errors.Is(err, errs.WrongOldPassword):
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"error": "` + err.Error() + `"}`))
+
 	case errors.Is(err, errs.ErrTokenInvalid) || errors.Is(err, errs.ErrTokenExpired):
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{"error": "unauthorized or invalid token"}`))

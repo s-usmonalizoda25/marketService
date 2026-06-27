@@ -9,6 +9,7 @@ import (
 	"github.com/s-usmonalizoda25/marketService/internal/models"
 	"github.com/s-usmonalizoda25/marketService/internal/service"
 	"github.com/s-usmonalizoda25/marketService/pkg/logger"
+	"go.uber.org/zap"
 )
 
 type UserHandler struct {
@@ -207,4 +208,44 @@ func (h *UserHandler) AdminChangeRole(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "user role updated successfully"}`))
+}
+
+func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	userId, ok := r.Context().Value(UserIDKey).(uint)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		OldPassword string `json:"old_password"`
+		NewPassword string `json:"new_password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.log.Warn("failed to decode change password request", zap.Error(err))
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.NewPassword) < 6 {
+		http.Error(w, "new password must be at least 6 characters", http.StatusBadRequest)
+		return
+	}
+
+	err := h.service.ChangePassword(r.Context(), userId, req.OldPassword, req.NewPassword)
+	if err != nil {
+
+		h.log.Error("failed to change password",
+			zap.Uint("user_id", userId),
+			zap.Error(err),
+		)
+
+		HandleError(w, h.log, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "password changed successfully"}`))
 }
