@@ -32,20 +32,34 @@ type MyUserService struct {
 	hasher     *security.BcryptHasher
 	jwtManager *security.JWTManager
 	cache      cache.MemoryCache
+	mailer     EmailSender
 }
 
-func NewMyUserService(repo repository.UserRepo, hasher *security.BcryptHasher, jwtManager *security.JWTManager, cache cache.MemoryCache) *MyUserService {
+type EmailSender interface {
+	SendOTP(ctx context.Context, email string, code string) error
+}
+
+func NewMyUserService(repo repository.UserRepo, hasher *security.BcryptHasher, jwtManager *security.JWTManager, cache cache.MemoryCache, mailer EmailSender) *MyUserService {
 	return &MyUserService{
 		repo:       repo,
 		hasher:     hasher,
 		jwtManager: jwtManager,
 		cache:      cache,
+		mailer:     mailer,
 	}
 }
 
 func (s *MyUserService) RegisterRequest(req models.RegisterReq) error {
+	otp, err := security.GenerateOTP()
+	if err != nil {
+		return err
+	}
 
-	otp := "252525"
+	err = s.mailer.SendOTP(context.Background(), req.Email, otp)
+	if err != nil {
+		return err
+	}
+
 	hashedPassword, err := s.hasher.Hash(req.Password)
 	if err != nil {
 		return err
@@ -62,8 +76,7 @@ func (s *MyUserService) RegisterRequest(req models.RegisterReq) error {
 		CreatedAt: time.Now(),
 	}
 
-	s.cache.Set(req.Email, waitingUser, 5*time.Minute)
-
+	s.cache.Set(req.Email, waitingUser, 10*time.Minute)
 	return nil
 }
 
@@ -72,7 +85,14 @@ func (s *MyUserService) VerifyEmail(ctx context.Context, req models.VerifyReq) (
 	if !found {
 		return 0, errs.ErrInvalidOtp
 	}
+
 	inwaiting := val.(models.WaitingUser)
+
+	if time.Since(inwaiting.CreatedAt) > 10*time.Minute {
+		s.cache.Remove(req.Email)
+		return 0, errs.ErrOtpExpired
+	}
+
 	if inwaiting.Otp != req.Code {
 		return 0, errs.ErrInvalidOtp
 	}
@@ -87,6 +107,7 @@ func (s *MyUserService) VerifyEmail(ctx context.Context, req models.VerifyReq) (
 	if err != nil {
 		return 0, err
 	}
+
 	s.cache.Remove(req.Email)
 	return id, nil
 }

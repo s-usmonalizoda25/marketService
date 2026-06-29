@@ -18,6 +18,7 @@ import (
 	"github.com/s-usmonalizoda25/marketService/internal/service"
 	"github.com/s-usmonalizoda25/marketService/pkg/cache"
 	"github.com/s-usmonalizoda25/marketService/pkg/logger"
+	"github.com/s-usmonalizoda25/marketService/pkg/mail"
 	"github.com/s-usmonalizoda25/marketService/router"
 	"go.uber.org/zap"
 )
@@ -37,6 +38,14 @@ func main() {
 		os.Getenv("DB_PASSWORD"),
 		os.Getenv("DB_NAME"),
 		os.Getenv("DB_PORT"),
+	)
+
+	smtpClient := mail.NewSMTP(
+		os.Getenv("SMTP_HOST"),
+		os.Getenv("SMTP_PORT"),
+		os.Getenv("SMTP_USER"),
+		os.Getenv("SMTP_PASS"),
+		os.Getenv("SMTP_USER"),
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -73,7 +82,7 @@ func main() {
 
 	userCache := cache.NewMemoryCache()
 
-	userService := service.NewMyUserService(userRepo, hasher, jwtManager, userCache)
+	userService := service.NewMyUserService(userRepo, hasher, jwtManager, userCache, smtpClient)
 	orderService := service.NewMyOrderService(orderRepo)
 
 	userHandler := handlers.NewUserHandler(userService, mainLog)

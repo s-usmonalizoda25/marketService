@@ -23,4 +23,5 @@ var (
 
 	ErrInvalidOtp    = errors.New("invalid Otp code")
 	WrongOldPassword = errors.New("old password is incorrect")
+	ErrOtpExpired    = errors.New("OTP code expired")
 )
