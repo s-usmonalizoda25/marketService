@@ -17,7 +17,7 @@ type UserRepo interface {
 	GetUserById(ctx context.Context, id uint) (*models.User, error)
 	SaveRefreshTokens(ctx context.Context, userID uint, token string, expiresAt time.Time) error
 	GetRefreshToken(ctx context.Context, token string) (*models.RefreshToken, error)
-	RevokeRefreshToken(ctx context.Context, token string) error
+	DeleteRefreshToken(ctx context.Context, token string) error
 	UpdateUser(ctx context.Context, id uint, name, phone string) error
 	SoftDeleteUser(ctx context.Context, id uint) error
 	GetAllUsers(ctx context.Context) ([]models.User, error)
@@ -88,7 +88,7 @@ func (r *PostgresUserRepo) GetUserById(ctx context.Context, id uint) (*models.Us
 
 func (r *PostgresUserRepo) SaveRefreshTokens(ctx context.Context, userID uint, token string, expiresAt time.Time) error {
 	const query = `
-        INSERT INTO refresh_tokens (token, expires_at, is_revoked, user_id)
+        INSERT INTO refresh_tokens (token_hash, expires_at, is_revoked, user_id)
         VALUES ($1, $2, FALSE, $3);
     `
 	_, err := r.pool.Exec(ctx, query, token, expiresAt, userID)
@@ -97,9 +97,9 @@ func (r *PostgresUserRepo) SaveRefreshTokens(ctx context.Context, userID uint, t
 
 func (r *PostgresUserRepo) GetRefreshToken(ctx context.Context, token string) (*models.RefreshToken, error) {
 	const query = `
-        SELECT id, token, expires_at, is_revoked, user_id, created_at
+        SELECT id, token_hash, expires_at, is_revoked, user_id, created_at
         FROM refresh_tokens
-        WHERE token = $1;
+        WHERE token_hash = $1;
     `
 	var rt models.RefreshToken
 	err := r.pool.QueryRow(ctx, query, token).Scan(
@@ -114,13 +114,9 @@ func (r *PostgresUserRepo) GetRefreshToken(ctx context.Context, token string) (*
 	return &rt, nil
 }
 
-func (r *PostgresUserRepo) RevokeRefreshToken(ctx context.Context, token string) error {
-	const query = `
-        UPDATE refresh_tokens
-        SET is_revoked = TRUE
-        WHERE token = $1;
-    `
-	_, err := r.pool.Exec(ctx, query, token)
+func (r *PostgresUserRepo) DeleteRefreshToken(ctx context.Context, tokenHash string) error {
+	const query = `DELETE FROM refresh_tokens WHERE token_hash = $1;`
+	_, err := r.pool.Exec(ctx, query, tokenHash)
 	return err
 }
 

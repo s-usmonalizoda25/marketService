@@ -22,7 +22,7 @@ func RunMigration(ctx context.Context, pool *pgxpool.Pool) error {
 
 	CREATE TABLE IF NOT EXISTS refresh_tokens (
 		id SERIAL PRIMARY KEY,
-		token VARCHAR(255) UNIQUE NOT NULL,
+		token_hash VARCHAR(255) UNIQUE NOT NULL,
 		expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
 		is_revoked BOOLEAN NOT NULL DEFAULT FALSE,
 		user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

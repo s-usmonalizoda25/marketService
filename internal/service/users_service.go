@@ -86,11 +86,9 @@ func (s *MyUserService) VerifyEmail(ctx context.Context, req models.VerifyReq) (
 		return 0, errs.ErrInvalidOtp
 	}
 
-	inwaiting := val.(models.WaitingUser)
-
-	if time.Since(inwaiting.CreatedAt) > 10*time.Minute {
-		s.cache.Remove(req.Email)
-		return 0, errs.ErrOtpExpired
+	inwaiting, ok := val.(models.WaitingUser)
+	if !ok {
+		return 0, errs.ErrInvalidOtp
 	}
 
 	if inwaiting.Otp != req.Code {
@@ -98,13 +96,16 @@ func (s *MyUserService) VerifyEmail(ctx context.Context, req models.VerifyReq) (
 	}
 
 	id, err := s.repo.CreateUser(ctx, &models.RegisterRequest{
-		Name:     inwaiting.User.Name,
-		Email:    inwaiting.User.Email,
-		Phone:    inwaiting.User.Phone,
-		Password: "",
+		Name:  inwaiting.User.Name,
+		Email: inwaiting.User.Email,
+		Phone: inwaiting.User.Phone,
 	}, inwaiting.User.PassworHash)
 
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return 0, errs.ErrEmailAlreadyExists
+		}
 		return 0, err
 	}
 
@@ -153,7 +154,8 @@ func (s *MyUserService) Login(ctx context.Context, req *models.LoginRequest) (*m
 
 	refreshExpiresAt := time.Now().Add(30 * 24 * time.Hour)
 
-	err = s.repo.SaveRefreshTokens(ctx, user.ID, refreshToken, refreshExpiresAt)
+	tokenHash := security.HashToken(refreshToken)
+	err = s.repo.SaveRefreshTokens(ctx, user.ID, tokenHash, refreshExpiresAt)
 	if err != nil {
 		return nil, err
 	}
@@ -166,12 +168,16 @@ func (s *MyUserService) Login(ctx context.Context, req *models.LoginRequest) (*m
 }
 
 func (s *MyUserService) Refresh(ctx context.Context, refreshToken string) (*models.TokenResponse, error) {
-	rt, err := s.repo.GetRefreshToken(ctx, refreshToken)
+
+	tokenHash := security.HashToken(refreshToken)
+
+	rt, err := s.repo.GetRefreshToken(ctx, tokenHash)
 	if err != nil {
 		return nil, err
 	}
 
 	if rt.IsRevoked || time.Now().After(rt.ExpiresAt) {
+		_ = s.repo.DeleteRefreshToken(ctx, tokenHash)
 		return nil, errs.ErrTokenInvalid
 	}
 
@@ -180,7 +186,7 @@ func (s *MyUserService) Refresh(ctx context.Context, refreshToken string) (*mode
 		return nil, err
 	}
 
-	err = s.repo.RevokeRefreshToken(ctx, refreshToken)
+	err = s.repo.DeleteRefreshToken(ctx, tokenHash)
 	if err != nil {
 		return nil, err
 	}
@@ -195,9 +201,10 @@ func (s *MyUserService) Refresh(ctx context.Context, refreshToken string) (*mode
 		return nil, err
 	}
 
-	refreshExpiresAt := time.Now().Add(30 * 24 * time.Hour)
+	newHash := security.HashToken(newRefreshToken)
+	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
 
-	err = s.repo.SaveRefreshTokens(ctx, user.ID, newRefreshToken, refreshExpiresAt)
+	err = s.repo.SaveRefreshTokens(ctx, user.ID, newHash, refreshExpiresAt)
 	if err != nil {
 		return nil, err
 	}

@@ -25,6 +25,14 @@ func HandleError(w http.ResponseWriter, log *logger.Logger, err error) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{"error": "unauthorized or invalid token"}`))
 
+	case errors.Is(err, errs.ErrInvalidOtp):
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"error": "invalid OTP code"}`))
+
+	case errors.Is(err, errs.ErrOtpExpired):
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"error": "OTP code has expired"}`))
+
 	case errors.Is(err, errs.ErrUserNotFound):
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(`{"error": "user not found"}`))
