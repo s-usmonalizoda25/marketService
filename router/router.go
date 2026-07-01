@@ -19,8 +19,8 @@ func NewRouter(jwtManager *security.JWTManager, userHandler *handlers.UserHandle
 	mux.HandleFunc("GET /users/me", handlers.AuthMiddleware(jwtManager, userHandler.GetProfile))
 	mux.HandleFunc("PUT /users/me", handlers.AuthMiddleware(jwtManager, userHandler.UpdateProfile))
 	mux.HandleFunc("DELETE /users/me", handlers.AuthMiddleware(jwtManager, userHandler.DeleteMe))
-
 	mux.HandleFunc("PUT /users/change-password", handlers.AuthMiddleware(jwtManager, userHandler.ChangePassword))
+	mux.HandleFunc("GET /users/login-history", handlers.AuthMiddleware(jwtManager, userHandler.GetLoginHistory))
 
 	//заказы польщователя
 	mux.HandleFunc("POST /orders", handlers.AuthMiddleware(jwtManager, orderHandler.CreateOrder))
@@ -33,6 +33,7 @@ func NewRouter(jwtManager *security.JWTManager, userHandler *handlers.UserHandle
 	mux.HandleFunc("GET /admin/users", handlers.AuthMiddleware(jwtManager, handlers.AdminMiddleware(userHandler.AdminGetAllUsers)))
 	mux.HandleFunc("PUT /admin/users/{id}/role", handlers.AuthMiddleware(jwtManager, handlers.AdminMiddleware(userHandler.AdminChangeRole)))
 	mux.HandleFunc("GET /admin/orders", handlers.AuthMiddleware(jwtManager, handlers.AdminMiddleware(orderHandler.AdminGetAllOrders)))
+	mux.HandleFunc("GET /admin/login-history", handlers.AuthMiddleware(jwtManager, handlers.AdminMiddleware(userHandler.AdminGetLoginHistory)))
 
 	return mux
 }

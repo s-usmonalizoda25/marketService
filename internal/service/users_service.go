@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -15,7 +16,7 @@ import (
 
 type UserService interface {
 	Register(ctx context.Context, req *models.RegisterRequest) (uint, error)
-	Login(ctx context.Context, req *models.LoginRequest) (*models.TokenResponse, error)
+	Login(ctx context.Context, req *models.LoginRequest, ip, userAgent string) (*models.TokenResponse, error)
 	Refresh(ctx context.Context, refreshToken string) (*models.TokenResponse, error)
 	GetProfile(ctx context.Context, id uint) (*models.User, error)
 	UpdateProfile(ctx context.Context, id uint, req *models.UpdateProfileRequest) error
@@ -25,6 +26,7 @@ type UserService interface {
 	RegisterRequest(req models.RegisterReq) error
 	VerifyEmail(ctx context.Context, req models.VerifyReq) (uint, error)
 	ChangePassword(ctx context.Context, id uint, oldPass, newPass string) error
+	GetLoginHistory(ctx context.Context, userID uint, role string) ([]models.LoginHistory, error)
 }
 
 type MyUserService struct {
@@ -131,7 +133,7 @@ func (s *MyUserService) Register(ctx context.Context, req *models.RegisterReques
 	return id, nil
 }
 
-func (s *MyUserService) Login(ctx context.Context, req *models.LoginRequest) (*models.TokenResponse, error) {
+func (s *MyUserService) Login(ctx context.Context, req *models.LoginRequest, ip, userAgent string) (*models.TokenResponse, error) {
 	user, err := s.repo.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, err
@@ -160,11 +162,17 @@ func (s *MyUserService) Login(ctx context.Context, req *models.LoginRequest) (*m
 		return nil, err
 	}
 
+	err = s.repo.SaveLoginHistory(ctx, user.ID, ip, userAgent)
+	if err != nil {
+		fmt.Printf("ERROR: failed to save login history: %v\n", err)
+	}
+
 	return &models.TokenResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresAt:    expiresAt,
 	}, nil
+
 }
 
 func (s *MyUserService) Refresh(ctx context.Context, refreshToken string) (*models.TokenResponse, error) {
@@ -263,4 +271,9 @@ func (s *MyUserService) ChangePassword(ctx context.Context, id uint, oldPass, ne
 		return err
 	}
 	return s.repo.UpdatePassword(ctx, id, newHash)
+}
+
+func (s *MyUserService) GetLoginHistory(ctx context.Context, userID uint, role string) ([]models.LoginHistory, error) {
+	isAdmin := (role == "admin")
+	return s.repo.GetLoginHistory(ctx, userID, isAdmin)
 }

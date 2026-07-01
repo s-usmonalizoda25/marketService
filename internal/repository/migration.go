@@ -38,6 +38,14 @@ func RunMigration(ctx context.Context, pool *pgxpool.Pool) error {
 		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 	);
 
+	CREATE TABLE IF NOT EXISTS login_history (
+    	id SERIAL PRIMARY KEY,
+    	user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    	ip VARCHAR(45) NOT NULL,
+    	user_agent TEXT NOT NULL,
+    	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+	);
+
 	
 	`
 

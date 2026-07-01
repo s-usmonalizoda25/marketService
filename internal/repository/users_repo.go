@@ -23,6 +23,8 @@ type UserRepo interface {
 	GetAllUsers(ctx context.Context) ([]models.User, error)
 	UpdateUserRole(ctx context.Context, id uint, role models.UserRole) error
 	UpdatePassword(ctx context.Context, id uint, passwordHash string) error
+	SaveLoginHistory(ctx context.Context, userID uint, ip, userAgent string) error
+	GetLoginHistory(ctx context.Context, userID uint, isAdmin bool) ([]models.LoginHistory, error)
 }
 
 type PostgresUserRepo struct {
@@ -185,4 +187,38 @@ func (r *PostgresUserRepo) UpdatePassword(ctx context.Context, id uint, password
 		return errs.ErrUserNotFound
 	}
 	return nil
+}
+
+func (r *PostgresUserRepo) SaveLoginHistory(ctx context.Context, userID uint, ip, userAgent string) error {
+	const query = `INSERT INTO login_history (user_id, ip, user_agent) VALUES ($1, $2, $3);`
+	_, err := r.pool.Exec(ctx, query, userID, ip, userAgent)
+	return err
+}
+
+func (r *PostgresUserRepo) GetLoginHistory(ctx context.Context, userID uint, isAdmin bool) ([]models.LoginHistory, error) {
+	var query string
+	var args []interface{}
+
+	if isAdmin {
+		query = `SELECT ip, user_agent, created_at FROM login_history ORDER BY created_at DESC;`
+	} else {
+		query = `SELECT ip, user_agent, created_at FROM login_history WHERE user_id = $1 ORDER BY created_at DESC;`
+		args = append(args, userID)
+	}
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var history []models.LoginHistory
+	for rows.Next() {
+		var h models.LoginHistory
+		if err := rows.Scan(&h.IP, &h.UserAgent, &h.CreatedAt); err != nil {
+			return nil, err
+		}
+		history = append(history, h)
+	}
+	return history, nil
 }

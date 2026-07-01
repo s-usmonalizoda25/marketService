@@ -77,7 +77,15 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.service.Login(r.Context(), &req)
+	ip := r.RemoteAddr
+	xff := r.Header.Get("X-Forwarded-For")
+	if xff != "" {
+		ip = xff
+	}
+
+	userAgent := r.UserAgent()
+
+	res, err := h.service.Login(r.Context(), &req, ip, userAgent)
 	if err != nil {
 		HandleError(w, h.log, err)
 		return
@@ -248,4 +256,29 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "password changed successfully"}`))
+}
+
+func (h *UserHandler) GetLoginHistory(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value(UserIDKey).(uint)
+	role, _ := r.Context().Value(UserRoleKey).(string)
+
+	history, err := h.service.GetLoginHistory(r.Context(), userID, role)
+	if err != nil {
+		HandleError(w, h.log, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(history)
+}
+
+func (h *UserHandler) AdminGetLoginHistory(w http.ResponseWriter, r *http.Request) {
+	history, err := h.service.GetLoginHistory(r.Context(), 0, "admin")
+	if err != nil {
+		HandleError(w, h.log, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(history)
 }
